@@ -6,13 +6,10 @@ Stealth. Fast. Profitable.
 import os
 import json
 import time
-import hmac
-import hashlib
 import base64
 import logging
 import requests
 import datetime
-from threading import Timer
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
@@ -39,7 +36,7 @@ CONFIG = {
     "HEDGE_SIZE_PCT": 0.35,
 }
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s 🐍 %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s 🐍 %(message)s")
 log = logging.getLogger(__name__)
 
 state = {
@@ -77,8 +74,9 @@ def kalshi_post(path, body):
 def get_balance():
     try:
         data = kalshi_get("/portfolio/balance")
-        state["current_balance"] = float(data.get("balance", 0)) / 100
-        return state["current_balance"]
+        balance = float(data.get("balance", 0)) / 100
+        state["current_balance"] = balance
+        return balance
     except Exception as e:
         log.error(f"Balance check failed: {e}")
         return state["current_balance"]
@@ -92,7 +90,7 @@ def get_open_positions():
 def get_latest_news():
     try:
         r = requests.get("https://newsdata.io/api/1/latest", params={"apikey": CONFIG["NEWS_API_KEY"], "language": "en", "category": "politics,sports,business,world", "size": 10}, timeout=10)
-        return [{"title": a.get("title",""), "description": a.get("description",""), "source": a.get("source_id","")} for a in r.json().get("results", [])]
+        return [{"title": a.get("title", ""), "description": a.get("description", ""), "source": a.get("source_id", "")} for a in r.json().get("results", [])]
     except:
         return []
 
@@ -105,21 +103,28 @@ def get_open_markets(limit=100):
 def ask_claude(news, market):
     try:
         prompt = f"""You are Operation Cobra Snake — elite prediction market AI.
-MARKET: {market.get('title','')}
-TICKER: {market.get('ticker','')}
-YES PRICE: {market.get('yes_ask_dollars','?')}
-NO PRICE: {market.get('no_ask_dollars','?')}
-CLOSES: {market.get('close_time','?')}
-VOLUME: {market.get('volume',0)}
+MARKET: {market.get('title', '')}
+TICKER: {market.get('ticker', '')}
+YES PRICE: {market.get('yes_ask_dollars', '?')}
+NO PRICE: {market.get('no_ask_dollars', '?')}
+CLOSES: {market.get('close_time', '?')}
+VOLUME: {market.get('volume', 0)}
 NEWS: {json.dumps(news[:5])}
 BALANCE: ${state['current_balance']:.2f}
 ALL TIME PROFIT: ${state['all_time_profit']:.2f}
 
 Analyze if news creates mispriced opportunity. Only recommend at 80%+ confidence.
+Consider game situation for sports — is game close? Time left?
+Cash out target around 75 cents. Cut losses if game is basically over.
 Respond ONLY in JSON:
-{{"bet":true/false,"side":"yes"/"no","confidence":0-100,"reasoning":"brief","hedge":true/false,"hedge_side":"yes"/"no"}}"""
-        r = requests.post("https://api.anthropic.com/v1/messages", headers={"x-api-key": CONFIG["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"}, json={"model": "claude-sonnet-4-20250514", "max_tokens": 300, "messages": [{"role": "user", "content": prompt}]}, timeout=15)
-        text = r.json()["content"][0]["text"].replace("```json","").replace("```","").strip()
+{{"bet":true,"side":"yes","confidence":85,"reasoning":"brief reason","hedge":false,"hedge_side":"no"}}"""
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": CONFIG["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-20250514", "max_tokens": 300, "messages": [{"role": "user", "content": prompt}]},
+            timeout=15
+        )
+        text = r.json()["content"][0]["text"].replace("```json", "").replace("```", "").strip()
         return json.loads(text)
     except Exception as e:
         return {"bet": False, "confidence": 0, "reasoning": str(e)}
@@ -131,7 +136,8 @@ def place_bet(ticker, side, size):
     try:
         markets = get_open_markets()
         market = next((m for m in markets if m["ticker"] == ticker), None)
-        if not market: return None
+        if not market:
+            return None
         price = float(market.get(f"{side}_ask_dollars", 0.50))
         count = max(1, int(size / price))
         result = kalshi_post("/portfolio/orders", {"ticker": ticker, "side": side, "action": "buy", "count": count, "type": "market"})
@@ -153,16 +159,21 @@ def close_bet(ticker, side, count):
         log.error(f"Close failed: {e}")
 
 def monitor_positions():
-    if not state["open_bets"]: return
+    if not state["open_bets"]:
+        return
     markets = get_open_markets()
     market_map = {m["ticker"]: m for m in markets}
     for order_id, bet in list(state["open_bets"].items()):
-        ticker, side, entry = bet["ticker"], bet["side"], bet["entry_price"]
-        if ticker not in market_map: del state["open_bets"][order_id]; continue
+        ticker = bet["ticker"]
+        side = bet["side"]
+        entry = bet["entry_price"]
+        count = bet["count"]
+        if ticker not in market_map:
+            del state["open_bets"][order_id]
+            continue
         market = market_map[ticker]
         current = float(market.get(f"{side}_ask_dollars", entry))
         change = current - entry
-        count = bet["count"]
         log.info(f"👀 {ticker} | Entry:{entry:.2f} Now:{current:.2f} Change:{change:+.2f}")
         if current >= CONFIG["CASH_OUT_TARGET"]:
             log.info(f"🎉 CASHING OUT {ticker} at {current:.2f}")
@@ -176,9 +187,9 @@ def monitor_positions():
             place_bet(ticker, hedge_side, get_bet_size() * CONFIG["HEDGE_SIZE_PCT"])
             bet["hedge_placed"] = True
         elif change <= -CONFIG["STOP_LOSS_PCT"]:
-            close_time = market.get("close_time","")
             try:
-                closes_at = datetime.datetime.fromisoformat(close_time.replace("Z","+00:00"))
+                close_time = market.get("close_time", "")
+                closes_at = datetime.datetime.fromisoformat(close_time.replace("Z", "+00:00"))
                 mins_left = (closes_at - datetime.datetime.now(datetime.timezone.utc)).total_seconds() / 60
                 if mins_left < 30:
                     log.info(f"🛑 CUTTING {ticker} | {mins_left:.0f}min left")
@@ -188,13 +199,13 @@ def monitor_positions():
                     del state["open_bets"][order_id]
                 else:
                     log.info(f"⏳ Holding {ticker} — {mins_left:.0f}min left, game still live")
-            except: pass
+            except:
+                pass
 
 def safety_check():
     balance = get_balance()
     if balance < CONFIG["MIN_BANKROLL"]:
-        state["paused"] = True
-        state["pause_reason"] = "💸 Bankroll too low — bot stopped"
+        log.warning(f"💸 Balance too low: ${balance:.2f}")
         return False
     if state["all_time_profit"] >= CONFIG["ALL_TIME_PROFIT_STOP"]:
         state["paused"] = True
@@ -219,30 +230,24 @@ def cobra_loop():
     while True:
         try:
             if state["paused"]:
-    log.warning(f"🛑 PAUSED: {state['pause_reason']}")
-    # Auto reset if balance is now available
-    balance = get_balance()
-    if balance >= CONFIG["MIN_BANKROLL"]:
-        log.info("💰 Balance restored! Cobra Snake reactivating!")
-        state["paused"] = False
-        state["pause_reason"] = None
-    time.sleep(60)
-    continue
+                log.warning(f"🛑 PAUSED: {state['pause_reason']}")
+                time.sleep(60)
                 continue
             if not safety_check():
                 time.sleep(30)
                 continue
             monitor_positions()
             news = get_latest_news()
-            markets = [m for m in get_open_markets() if m.get("volume",0) > 50 and m.get("yes_ask_dollars")]
+            markets = [m for m in get_open_markets() if m.get("volume", 0) > 50 and m.get("yes_ask_dollars")]
             log.info(f"🔍 {len(markets)} markets | 📰 {len(news)} headlines")
             for market in markets[:10]:
-                if len(state["open_bets"]) >= CONFIG["MAX_OPEN_BETS"]: break
+                if len(state["open_bets"]) >= CONFIG["MAX_OPEN_BETS"]:
+                    break
                 decision = ask_claude(news, market)
-                if decision.get("bet") and decision.get("confidence",0) >= CONFIG["MIN_CONFIDENCE"]:
+                if decision.get("bet") and decision.get("confidence", 0) >= CONFIG["MIN_CONFIDENCE"]:
                     log.info(f"⚡ {market['title']} | {decision['confidence']}% | {decision['reasoning']}")
                     place_bet(market["ticker"], decision["side"], get_bet_size())
-            win_rate = (state["winning_bets"]/state["total_bets"]*100) if state["total_bets"] > 0 else 0
+            win_rate = (state["winning_bets"] / state["total_bets"] * 100) if state["total_bets"] > 0 else 0
             log.info(f"📊 Balance:${state['current_balance']:.2f} | P&L:${state['all_time_profit']:+.2f} | WinRate:{win_rate:.0f}% | OpenBets:{len(state['open_bets'])}")
             time.sleep(60)
         except KeyboardInterrupt:
