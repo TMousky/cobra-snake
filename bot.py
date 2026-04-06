@@ -15,7 +15,8 @@ from cryptography.hazmat.backends import default_backend
 
 CONFIG = {
     "KALSHI_KEY_ID": os.environ.get("KALSHI_KEY_ID", ""),
-    "KALSHI_PRIVATE_KEY": os.environ.get("KALSHI_PRIVATE_KEY", "").replace(" RSA PRIVATE KEY", "\nRSA PRIVATE KEY").replace("KEY----- ", "KEY-----\n").replace(" -----END", "\n-----END").replace(" MIIE", "\nMIIE").replace("d\nM", "d M"),
+    "KALSHI_PRIVATE_KEY": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Eug5EcdzZEAbCIBff1GjLAjZn+6LNN4djeV38n9WsjyIxBk\n7e07u/q8lWhrmYjgkUdIb6bP9T6c7IEQGWvHNoQghUevoDwbNkHZXnBV17xp5s7Z\nYuQBXq9/C5zqAFvq5OhYjPzcPh7wqbkfREGHV/oqIw0sTOsZHd6qZIA8EJokxaYf\nfIIamElx5yLWVLi8YJE/goP5wswo8/u337qXmcp3tLcpMLVRu+Qv7d531FKNgdE6\nKGDKB/6oFi7JWwnOtXdrVggi6Edu6OJbpVroCQkYs5sU0OzAgess2e+4Qp+sN0rz\nWCIZiudTrv+1Oy/iZ74K2WtewQTJPlp/xnTfbQIDAQABAoIBAAqvdod/ZnX/NEhX\nzj/KWG4rMwW1E7Xs+0cFPvkGAatAl7tYwfS6sM/J4xa/DpYHwY1yXLLtmcl49s/j\nJxJGxydyy8BKlyXfL34vDpmbpau1jLE8d0Ztb+yNkDTmTdLK5Fft220QI7REHhB2\n4LW9rtXCjZrSuC0R+m3f2FnjgjFPv1I7Myn7w8XcFFuZS7u3KZzrPCTOsk+ILMGi\nvmaydxEB3cldeuS5udO9DNzAG/1e2t565PF21BFYlJwCH0RipyImL5oARU9W3MpX\nqlC5aurM1YqZVHg2GPbhNzHb7G3YKS2iwXH8ZWMVROthkOI/iSASW9LEp7TAPb+r\nVMj8QEECgYEA3vwZGJcYSHI6Njd4/PwcBgfDowS+ZHsdUt/HRpixLfawQonSXJLl\nB9ZGlpPPXyZrHQCyl/RZ5LV8zPhDhyd+PmtSpFhusKhhTgQSUa32sifb4aCaB5n5\n5fR6QZRMFS7Vv78fL2kIC+eRsYfpieFl2oOvVh9j​​​​​​​​​​​​​​​​
+
     "KALSHI_BASE_URL": "https://api.elections.kalshi.com/trade-api/v2",
     "NEWS_API_KEY": os.environ.get("NEWS_API_KEY", ""),
     "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),
