@@ -49,11 +49,15 @@ state = {
     "pause_reason": None,
     "total_bets": 0,
     "winning_bets": 0,
-}
-
 def load_private_key():
     key_pem = CONFIG["KALSHI_PRIVATE_KEY"]
+    key_pem = key_pem.replace("\\n", "\n")
+    key_pem = key_pem.replace(" RSA PRIVATE", "\nRSA PRIVATE")
+    key_pem = key_pem.replace("KEY----- ", "KEY-----\n")
+    key_pem = key_pem.replace(" -----END", "\n-----END")
+    key_pem = key_pem.strip()
     return serialization.load_pem_private_key(key_pem.encode(), password=None, backend=default_backend())
+
 
 def sign_request(method, path):
     ts = str(int(time.time() * 1000))
