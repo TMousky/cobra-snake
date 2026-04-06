@@ -15,7 +15,7 @@ from cryptography.hazmat.backends import default_backend
 
 CONFIG = {
     "KALSHI_KEY_ID": os.environ.get("KALSHI_KEY_ID", ""),
-    "KALSHI_PRIVATE_KEY": os.environ.get("KALSHI_PRIVATE_KEY", ""),
+    "KALSHI_PRIVATE_KEY": os.environ.get("KALSHI_PRIVATE_KEY", "").replace(" RSA PRIVATE KEY", "\nRSA PRIVATE KEY").replace("KEY----- ", "KEY-----\n").replace(" -----END", "\n-----END").replace(" MIIE", "\nMIIE").replace("d\nM", "d M"),
     "KALSHI_BASE_URL": "https://api.elections.kalshi.com/trade-api/v2",
     "NEWS_API_KEY": os.environ.get("NEWS_API_KEY", ""),
     "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY", ""),
