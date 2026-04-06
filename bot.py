@@ -1,6 +1,6 @@
-“””
-OPERATION COBRA SNAKE - Kalshi Trading Bot
-“””
+
+
+
 
 import os
 import json
@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 
-PRIVATE_KEY_PEM = “””—–BEGIN RSA PRIVATE KEY—–
+PRIVATE_KEY_PEM = """
 MIIEpAIBAAKCAQEA0Eug5EcdzZEAbCIBff1GjLAjZn+6LNN4djeV38n9WsjyIxBk
 7e07u/q8lWhrmYjgkUdIb6bP9T6c7IEQGWvHNoQghUevoDwbNkHZXnBV17xp5s7Z
 YuQBXq9/C5zqAFvq5OhYjPzcPh7wqbkfREGHV/oqIw0sTOsZHd6qZIA8EJokxaYf
