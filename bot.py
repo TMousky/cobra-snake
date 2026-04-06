@@ -219,8 +219,15 @@ def cobra_loop():
     while True:
         try:
             if state["paused"]:
-                log.warning(f"🛑 PAUSED: {state['pause_reason']}")
-                time.sleep(60)
+    log.warning(f"🛑 PAUSED: {state['pause_reason']}")
+    # Auto reset if balance is now available
+    balance = get_balance()
+    if balance >= CONFIG["MIN_BANKROLL"]:
+        log.info("💰 Balance restored! Cobra Snake reactivating!")
+        state["paused"] = False
+        state["pause_reason"] = None
+    time.sleep(60)
+    continue
                 continue
             if not safety_check():
                 time.sleep(30)
